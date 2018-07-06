@@ -1,14 +1,9 @@
-import os
-import numpy as np
-import constrained_mst as cmst
-import vigra
-
 from concurrent import futures
-from offset_versions import get_offset_version
-# from volumina_viewer import volumina_n_layer
+import numpy as np
+import mutex_watershed as mws
 
 
-def run_mst(affinities,
+def run_mws(affinities,
             offsets, stride,
             seperating_channel=2,
             invert_dam_channels=True,
@@ -23,16 +18,15 @@ def run_mst(affinities,
     sorted_edges = np.argsort(affinities_.ravel())
     # run the mst watershed
     vol_shape = affinities_.shape[1:]
-    mst = cmst.ConstrainedWatershed(np.array(vol_shape),
-                                    offsets,
-                                    seperating_channel,
-                                    stride)
+    mst = mws.MutexWatershed(np.array(vol_shape),
+                             offsets,
+                             seperating_channel,
+                             stride)
     if randomize_bounds:
         mst.compute_randomized_bounds()
     mst.repulsive_ucc_mst_cut(sorted_edges, 0)
-    actions = mst.get_flat_applied_uc_actions().reshape(affinities_.shape)
     segmentation = mst.get_flat_label_image().reshape(vol_shape)
-    return segmentation, actions
+    return segmentation
 
 
 def stacked_mst(affinities,
@@ -44,7 +38,7 @@ def stacked_mst(affinities,
     seg = np.zeros(out_shape, dtype='uint32')
 
     def run_mst_z(z):
-        seg_z = run_mst(
+        seg_z = run_mws(
             affinities[:, z, :], offsets, stride, seperating_channel, invert_dam_channels=invert_dam_channels
         )
         seg[z] = seg_z
@@ -72,7 +66,7 @@ def mst_2d_from_3d(affinities, offsets, invert_dam_channels=False):
     actions = np.zeros(out_shape, dtype='uint32')
 
     def mst2d(z):
-        mst, action = run_mst(np.require(affinities_[:, z], requirements='C'),
+        mst, action = run_mws(np.require(affinities_[:, z], requirements='C'),
                               offsets_,
                               np.array([2, 2]),
                               seperating_channel=2,
@@ -91,32 +85,3 @@ def mst_2d_from_3d(affinities, offsets, invert_dam_channels=False):
     seg += offsets[:, None, None]
 
     return seg
-
-
-def make_results(paths,
-                 offset_version,
-                 strides=np.array([1, 2, 2]),
-                 invert_dams=True,
-                 run_2d=False):
-    offsets = get_offset_version(offset_version)
-    for path in paths:
-        print("Start MST for affinities from:", path)
-        save_prefix = os.path.split(path)[1][:-3]
-        save_path = '/home/consti/Work/data_neuro/isbi/mst_results/mst_%s.h5' % save_prefix
-        print("Saving to:", save_path)
-        affs = vigra.readHDF5(path, 'data')
-
-        if run_2d:
-            mst, actions = mst_2d_from_3d(
-                affs,
-                offsets,
-                inv_dams=invert_dams)
-        else:
-            mst, actions = run_mst(
-                affs,
-                offsets,
-                strides,
-                invert_dam_channels=invert_dams,
-                seperating_channel=3)
-        vigra.writeHDF5(mst, save_path, 'data', compression='gzip')
-        vigra.writeHDF5(actions, save_path[:-3] + "_actions.h5", 'data', compression='gzip')

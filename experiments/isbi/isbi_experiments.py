@@ -1,10 +1,16 @@
 import os
+import time
 import argparse
 import numpy as np
+import h5py
 import vigra
-import time
 
 from scipy.ndimage import convolve
+
+
+def writeHDF5(data, path, key, **kwargs):
+    with h5py.File(path) as f:
+        f.create_dataset(key, data=data, **kwargs)
 
 
 def make_2d_edges(segmentation):
@@ -107,11 +113,13 @@ def mws_result(affinities, offsets, strides, randomize_bounds):
 
 # view affinities and / or segmentations
 def view_results(raw_path,
+                 raw_key,
                  pmaps,
                  segmentations,
                  segmentation_labels):
     from cremi_toos.viewer.volumina import view
-    raw = vigra.readHDF5(raw_path, 'data').astype('float32')
+    with h5py.File(raw_path) as f:
+        raw = f[raw_key][:].astype('float32')
     data = [raw]
     data.extend(pmaps)
     labels = ['raw']
@@ -126,8 +134,8 @@ def view_results(raw_path,
     view(data, labels)
 
 
-def isbi_experiments(raw_path,
-                     aff_path,
+def isbi_experiments(raw_path, aff_path,
+                     raw_key, aff_key,
                      result_folder,
                      threshold=False,
                      ws=False,
@@ -149,7 +157,8 @@ def isbi_experiments(raw_path,
                [0, -27, 0], [0, 0, -27]]
     # additional long range dam edges
 
-    affs = vigra.readHDF5(aff_path, 'data')
+    with h5py.File(aff_path) as f:
+        affs = f[aff_key][:]
     pmap = make_pmap(affs)
 
     if not os.path.exists(result_folder):
@@ -162,8 +171,8 @@ def isbi_experiments(raw_path,
         print("Computing threshold segmentation ...")
         thresh_seg, t_thresh = threshold_baseline(1. - pmap, thresh)
         print("... finished in %f s" % t_thresh)
-        vigra.writeHDF5(thresh_seg, os.path.join(result_folder, 'threshold.h5'),
-                        'data', compression='gzip')
+        writeHDF5(thresh_seg, os.path.join(result_folder, 'threshold.h5'),
+                  'data', compression='gzip')
         segmentations.append(thresh_seg)
         labels.append('thresholded')
 
@@ -173,8 +182,8 @@ def isbi_experiments(raw_path,
         print("Computing watershed segmentation ...")
         ws_seg, t_ws = ws_baseline(pmap, sigma_ws, min_seg_size)
         print("... finished in  %f s" % t_ws)
-        vigra.writeHDF5(ws_seg, os.path.join(result_folder, 'ws.h5'),
-                        'data', compression='gzip')
+        writeHDF5(ws_seg, os.path.join(result_folder, 'ws.h5'),
+                  'data', compression='gzip')
         segmentations.append(ws_seg)
         labels.append('watershed')
 
@@ -185,8 +194,8 @@ def isbi_experiments(raw_path,
         print("Computing distance transform watershed segmentation ...")
         wsdt_seg, t_wsdt = wsdt_baseline(pmap, threshold, sigma_wsdt, min_seg_size)
         print("... finished in  %f s" % t_wsdt)
-        vigra.writeHDF5(wsdt_seg, os.path.join(result_folder, 'wsdt.h5'),
-                        'data', compression='gzip')
+        writeHDF5(wsdt_seg, os.path.join(result_folder, 'wsdt.h5'),
+                  'data', compression='gzip')
         segmentations.append(wsdt_seg)
         labels.append('watershed on distance transform')
 
@@ -194,8 +203,8 @@ def isbi_experiments(raw_path,
         print("Computing multicut segmentation ...")
         mc_seg, t_mc = mc_baseline(affs)
         print("... finished in  %f s" % t_mc)
-        vigra.writeHDF5(mc_seg, os.path.join(result_folder, 'mc.h5'),
-                        'data', compression='gzip')
+        writeHDF5(mc_seg, os.path.join(result_folder, 'mc.h5'),
+                  'data', compression='gzip')
         segmentations.append(mc_seg)
         labels.append('local multicut')
 
@@ -203,8 +212,8 @@ def isbi_experiments(raw_path,
         print("Computing multicut segmentation with long-range edges ...")
         mc_lr_seg, t_mclr = mc_longrange_baseline(affs, offsets)
         print("... finished in %f s" % t_mclr)
-        vigra.writeHDF5(mc_lr_seg, os.path.join(result_folder, 'mclr.h5'),
-                        'data', compression='gzip')
+        writeHDF5(mc_lr_seg, os.path.join(result_folder, 'mclr.h5'),
+                  'data', compression='gzip')
         segmentations.append(mc_lr_seg)
         labels.append('long range multicut with all edges')
 
@@ -212,8 +221,8 @@ def isbi_experiments(raw_path,
         print("Computing multicut segmentation with repulsive long-range edges ...")
         mc_lr_seg2, t_mclr2 = mc_longrange_baseline(affs, offsets, True)
         print("... finished in %f s" % t_mclr2)
-        vigra.writeHDF5(mc_lr_seg2, os.path.join(result_folder, 'mclr-repulsive.h5'),
-                        'data', compression='gzip')
+        writeHDF5(mc_lr_seg2, os.path.join(result_folder, 'mclr-repulsive.h5'),
+                  'data', compression='gzip')
         segmentations.append(mc_lr_seg2)
         labels.append('long range multicut only repulsive edges')
 
@@ -222,12 +231,14 @@ def isbi_experiments(raw_path,
         print("Computing mutex watershed segmentation ...")
         mws_seg, t_mws = mws_result(affs, offsets, strides, randomize_bounds=False)
         print("... finished in  %f s" % t_mws)
+        writeHDF5(mws_seg, os.path.join(result_folder, 'mws.h5'),
+                  'data', compression='gzip')
         segmentations.append(mws)
         labels.append('MWS')
 
     pmaps = [pmap]
     if view:
-        view_results(raw_path, pmaps, segmentations, labels)
+        view_results(raw_path, raw_key, pmaps, segmentations, labels)
 
 
 def str2bool(v):
@@ -238,7 +249,9 @@ def main():
     algos = ['threshold', 'ws', 'wsdt', 'mc', 'mclr', 'mclr-repulsive', 'mws']
     parser = argparse.ArgumentParser()
     parser.add_argument('raw_path', type=str, help='path to raw data (hdf5 file)')
+    parser.add_argument('raw_key', type=str, help='path to raw dataset in hdf5 file')
     parser.add_argument('aff_path', type=str, help='path to affinities (hdf5 file)')
+    parser.add_argument('aff_key', type=str, help='path to affinity dataset in hdf5 file')
     parser.add_argument('result_folder', type=str,
                         help='folder to save result segmentations as hdf5')
     parser.add_argument('--algorithms', type=str, nargs='+', default=['mws'],
@@ -248,12 +261,14 @@ def main():
 
     args = parser.parse_args()
     raw_path, aff_path = args.raw_path, args.aff_path
+    raw_key, aff_key = args.raw_key, args.aff_key
     assert os.path.exists(raw_path), raw_path
     assert os.path.exists(aff_path), aff_path
     algo_choice = args.algorithms
     assert all(alg in algos
                for alg in algo_choice), "Invalid algorithm choice in:" + ", ".join(algo_choice)
-    isbi_experiments(raw_path, aff_path, args.result_folder,
+    isbi_experiments(raw_path, aff_path,
+                     raw_key, aff_key, args.result_folder,
                      threshold='threshold' in algo_choice,
                      ws='ws' in algo_choice,
                      wsdt='wsdt' in algo_choice,

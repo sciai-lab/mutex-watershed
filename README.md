@@ -27,11 +27,15 @@ To reproduce the ISBI experiments, go to the `experiments/isbi` folder
 and run the `isbi_experiments` script:
 `python isbi_experiments.py /path/to/raw.h5 /path/to/affinities.h5 /path/to/res_folder --algorithms mws`
 
+You will need vigra as additional dependency:
+`conda install -c conda-forge vigra`
+
 You can also reproduce the baseline results by specifying further algorithms.
 Note that most of these will need the https://github.com/constantinpape/cremi_tools
 repository and further dependencies specified there.
 
-You can find the data used in the paper in `data/isbi`.
+You can obtain the data from:
+TODO link.
 
 
 BSD Experiments
