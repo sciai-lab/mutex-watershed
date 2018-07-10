@@ -11,6 +11,8 @@ The file `isbi_test_volume.h5` contains
 - `/raw` - the test voulem raw data
 - `/affinities` - the affinity predictions
 
-TODO add trained network weights
+The file `isbi_3d_model.pytorch` contains the weights of the
+trained model (pytorch 0.2).
 
-You can download the zip from TODO link.
+You can download the zip from
+https://hcicloud.iwr.uni-heidelberg.de/index.php/s/6LuE7nxBN3EFRtL

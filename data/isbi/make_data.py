@@ -2,13 +2,13 @@ import h5py
 
 
 def make_train_file():
-    path = '/home/papec/Work/neurodata_hdd/isbi_2012/isbi2012_train_volume.h5'
+    path = '/home/constantin/Work/neurodata_hdd/isbi12_data/isbi2012_train_volume.h5'
     with h5py.File(path) as f:
         raw = f['volumes/raw'][:]
         gt = f['volumes/labels/neuron_ids_3d'][:]
         membranes = f['volumes/labels/membranes'][:]
 
-    aff_path = '/home/papec/Work/neurodata_hdd/isbi_2012/predictions/isbi_train_offsetsV4_3d_meantda_damws2deval_final.h5'
+    aff_path = '/home/constantin/Work/neurodata_hdd/isbi12_data/predictions/isbi_train_offsetsV4_3d_meantda_damws2deval_final.h5'
     with h5py.File(aff_path) as f:
         affs = f['data'][:]
 
@@ -20,11 +20,11 @@ def make_train_file():
 
 
 def make_test_file():
-    path = '/home/papec/Work/neurodata_hdd/isbi_2012/isbi2012_test_volume.h5'
+    path = '/home/constantin/Work/neurodata_hdd/isbi12_data/isbi2012_test_volume.h5'
     with h5py.File(path) as f:
         raw = f['volumes/raw'][:]
 
-    aff_path = '/home/papec/Work/neurodata_hdd/isbi_2012/predictions/isbi_test_offsetsV4_3d_meantda_damws2deval_final.h5'
+    aff_path = '/home/constantin/Work/neurodata_hdd/isbi12_data/predictions/isbi_test_offsetsV4_3d_meantda_damws2deval_final.h5'
     with h5py.File(aff_path) as f:
         affs = f['data'][:]
 
@@ -34,4 +34,5 @@ def make_test_file():
 
 
 if __name__ == '__main__':
-    make_test_file()
+    make_train_file()
+    # make_test_file()
