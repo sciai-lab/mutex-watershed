@@ -3,7 +3,6 @@ import time
 import argparse
 import numpy as np
 import h5py
-import vigra
 
 from scipy.ndimage import convolve
 
@@ -37,6 +36,7 @@ def timer(func):
 
 @timer
 def threshold_baseline(pmap, threshold):
+    import vigra
     pmap_segmentation = np.zeros_like(pmap, dtype='uint32')
     pmap_segmentation[pmap > threshold] = 1
     for z in range(pmap_segmentation.shape[0]):
@@ -227,7 +227,7 @@ def isbi_experiments(raw_path, aff_path,
         labels.append('long range multicut only repulsive edges')
 
     if mws:
-        strides = np.array([1., 2., 2.])
+        strides = np.array([1., 10., 10.])
         print("Computing mutex watershed segmentation ...")
         mws_seg, t_mws = mws_result(affs, offsets, strides, randomize_bounds=False)
         print("... finished in  %f s" % t_mws)
