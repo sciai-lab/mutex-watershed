@@ -1,9 +1,9 @@
 from concurrent import futures
 
 import numpy as np
-import vigra
 import nifty
 import nifty.graph.opt.multicut as nmc
+import nifty.graph.opt.lifted_multicut as nlmc
 
 
 # this returns a 2d array with the all the indices of matching rows for a and b
@@ -26,13 +26,20 @@ def compute_mc_superpixels(affinities, n_threads):
 
 
 def compute_long_range_mc_superpixels(affinities, offsets,
-                                      only_repulsive_lr, n_threads):
-    segmenter = LongRangeMulticutSuperpixel(only_repulsive_lr=only_repulsive_lr,
-                                            stacked_2d=True, n_threads=n_threads)
+                                      only_repulsive_lr, n_threads,
+                                      stacked_2d=True):
+    segmenter = LongRangeMulticutSuperpixel(offsets=offsets, only_repulsive_lr=only_repulsive_lr,
+                                            stacked_2d=stacked_2d, n_threads=n_threads)
+    return segmenter(affinities)
+
+
+def compute_lmc_superpixels(affinities, offsets, n_threads, stacked_2d=True):
+    segmenter = LmcSuperpixel(offsets=offsets, n_threads=n_threads, stacked_2d=stacked_2d)
     return segmenter(affinities)
 
 
 def size_filter(hmap, seg, threshold):
+    import vigra
     segments, counts = np.unique(seg, return_counts=True)
     mask = np.ma.masked_array(seg, np.in1d(seg, segments[counts < threshold])).mask
     filtered = seg.copy()
@@ -71,6 +78,21 @@ def multicut(n_nodes, uvs, costs, time_limit=None):
         node_labels = solver.optimize(visitor=visitor)
     else:
         node_labels = solver.optimize()
+    return node_labels
+
+
+def lifted_multicut(n_nodes, local_uvs, local_costs, lifted_uvs, lifted_costs, time_limit=None):
+    graph = nifty.graph.UndirectedGraph(n_nodes)
+    graph.insertEdges(local_uvs)
+
+    lifted_obj = nlmc.liftedMulticutObjective(graph)
+    lifted_obj.setCosts(local_uvs, local_costs)
+    lifted_obj.setCosts(lifted_uvs, lifted_costs)
+    # visitor = lifted_obj.verboseVisitor(100)
+    solver_ehc = lifted_obj.liftedMulticutGreedyAdditiveFactory().create(lifted_obj)
+    node_labels = solver_ehc.optimize()
+    solver_kl = lifted_obj.liftedMulticutKernighanLinFactory().create(lifted_obj)
+    node_labels = solver_kl.optimize(node_labels)
     return node_labels
 
 
@@ -205,11 +227,75 @@ class LongRangeMulticutSuperpixel(WatershedBase):
         return segmentation, max_label
 
     def __call__(self, affinities):
-        assert affinities.shape[0] == len(self.offsets)
+        assert affinities.shape[0] == len(self.offsets), "%i, %i" % (affinities.shape[0], len(self.offsets))
         if self.stacked_2d:
             affinities_ = np.require(affinities[self.keep_channels], requirements='C')
             segmentation, _ = superpixel_stacked_from_affinities(affinities_, self.lr_mc_superpixel, self.n_threads)
 
         else:
-            segmentation, _ = self.mc_superpixel(affinities)
+            segmentation, _ = self.lr_mc_superpixel(affinities)
+        return segmentation
+
+
+class LmcSuperpixel(WatershedBase):
+    def __init__(self, offsets,
+                 beta=.5, beta_lifted=.5,
+                 cost_weight=1., min_segment_size=0,
+                 stacked_2d=False, n_threads=1):
+        self.stacked_2d = stacked_2d
+        # if we calculate stacked 2d superpixels from 3d affinity
+        # maps, we must adjust the offsets by excludig all offsets
+        # with z coordinates and make the rest 2d
+        if self.stacked_2d:
+            self.keep_channels, self.offsets = self.get_2d_from_3d_offsets(offsets)
+        else:
+            self.offsets = offsets
+        self.beta = beta
+        self.beta_lifted = beta_lifted
+        self.cost_weight = cost_weight
+        self.min_segment_size = min_segment_size
+        self.n_threads = n_threads
+
+    def lmc_superpixel(self, affinities, dim):
+        shape = affinities.shape[1:]
+        grid_graph = nifty.graph.undirectedGridGraph(shape)
+        edge_map = grid_graph.liftedProblemFromLongRangeAffinities(affinities,
+                                                                   self.offsets)
+        uvs = np.array([key for key in edge_map.keys()] , dtype='uint32')
+        costs = np.array([val for val in edge_map.values()], dtype='float64')
+
+        # split uv-ids and costs into local and lifted uv-ids
+        local_uvs = grid_graph.uvIds()
+        # find edges of the local connectivity in our uvs
+        local_edges = find_matching_row_indices(uvs, local_uvs)[:, 0]
+        assert len(local_edges) == len(local_uvs)
+        # invert indices to get the mask only containing long range edges
+        lr_edge_mask = np.ones(len(uvs), dtype='bool')
+        lr_edge_mask[local_edges] = False
+        # split into local and lifted
+        lifted_uvs = uvs[lr_edge_mask]
+        lifted_costs = probs_to_costs(costs[lr_edge_mask], beta=self.beta_lifted)
+        local_costs = probs_to_costs(costs[local_edges], beta=self.beta_lifted)
+        # weight the local costs with lifted-to-local weight
+        local_costs *= self.cost_weight
+        segmentation = lifted_multicut(grid_graph.numberOfNodes,
+                                       local_uvs,
+                                       local_costs,
+                                       lifted_uvs,
+                                       lifted_costs).reshape(shape)
+        if self.min_segment_size > 0:
+            hmap = np.sum(affinities[:dim], axis=0) / dim
+            segmentation, max_label = size_filter(hmap, segmentation, self.min_segment_size)
+        else:
+            max_label = segmentation.max()
+        return segmentation, max_label
+
+    def __call__(self, affinities):
+        if self.stacked_2d:
+            affinities_ = np.require(affinities[self.keep_channels], requirements='C')
+            segmentation, _ = superpixel_stacked_from_affinities(affinities_,
+                                                                 partial(self.lmc_superpixel, dim=2),
+                                                                 self.n_threads)
+        else:
+            segmentation, _ = self.lmc_superpixel(affinities, dim=3)
         return segmentation
