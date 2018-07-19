@@ -2,6 +2,7 @@
 #include "pybind11/stl.h"
 
 #include <math.h>
+#include <fstream>
 
 
 #include "xtensor/xmath.hpp"
@@ -423,60 +424,81 @@ struct MutexWatershed {
     }
     
 
-    inline bool dam_constrained_merge(uint64_t i, uint64_t j) {
+    template<class OUT>
+    inline bool dam_constrained_merge(uint64_t i, uint64_t j, OUT & out) {
         uint64_t root_i = find(i);
         uint64_t root_j = find(j);
     
         if (root_i != root_j) {
+            bool have_merged; 
             if ((*rank)(root_i) < (*rank)(root_j)) {
-                return merge_roots(root_i, root_j);
+                have_merged = merge_roots(root_i, root_j);
             }
             else if ((*rank)(root_i) > (*rank)(root_j)) {
-                return merge_roots(root_j, root_i);
+                have_merged = merge_roots(root_j, root_i);
             }
             else{
                 if (merge_roots(root_i, root_j)) {   
                     (*rank)(root_j) += 1;
-                    return true;
+                    have_merged = true;
+                } else {
+                    have_merged = false;
                 }
-                return false;
             }
+            if(have_merged) {
+                out << "have no mutex, merge" << std::endl;
+            } else {
+                out << "have mutex, no merge" << std::endl;
+            }
+            return have_merged;
         }
         else{
+            out << "already linked" << std::endl;
             return false;
         }
     }
 
-    inline bool add_dam_edge(uint64_t i, uint64_t j, uint64_t dam_edge) {
+    template<class OUT>
+    inline bool add_dam_edge(uint64_t i, uint64_t j, uint64_t dam_edge, OUT & out) {
         uint64_t root_i = find(i);
         uint64_t root_j = find(j);
         if (root_i != root_j) {
+            out << "is mutex" << std::endl;
             if (!is_dam_constrained(root_i, root_j)){
                 dam_graph[root_i].insert(std::upper_bound(dam_graph[root_i].begin(), dam_graph[root_i].end(), dam_edge), dam_edge);
                 dam_graph[root_j].insert(std::upper_bound(dam_graph[root_j].begin(), dam_graph[root_j].end(), dam_edge), dam_edge);
                 return true;
             }
+        } else { 
+            out << "already linked" << std::endl;
         }
         return false;
     }
 
     void repulsive_mst_cut(const xt::pyarray<long> & edge_list) {
+        std::ofstream out("mutex_actions_old.txt", std::ofstream::out);
         for (auto& e : edge_list) {
+            out << "Edge: " << e << std::endl;
             uint64_t i = _get_position(e);
             uint64_t d = _get_direction(e);
             if (check_bounds(i, d)) {
                 int64_t j = int64_t(i) + strides(d);
+                out << "connects " << i << " " << j << std::endl;
                 if (d < num_attractive_channels) {
-                    bool a = dam_constrained_merge(i, j);
+                    bool a = dam_constrained_merge(i, j, out);
                     uc_actions(e) = a;
                 }
                 else{
-                    uc_actions(e) = add_dam_edge(i, j, e);
+                    uc_actions(e) = add_dam_edge(i, j, e, out);
                 }
+            } else {
+                out << "is invalid" << std::endl;
             }
+            out << std::endl;
         }
     }
 
+    /*
     void repulsive_ucc_mst_cut(const xt::pyarray<long> & edge_list, uint64_t num_iterations) {
         finished = true;
         action_counter = 0;
@@ -512,6 +534,7 @@ struct MutexWatershed {
             }
         }
     }
+    */
 
     bool is_finised() {
         return finished;
@@ -624,7 +647,7 @@ PYBIND11_PLUGIN(mutex_watershed)
         .def("check_bounds",  &MutexWatershed::check_bounds)
         .def("compute_randomized_bounds",  &MutexWatershed::compute_randomized_bounds)
         .def("repulsive_mst_cut",  &MutexWatershed::repulsive_mst_cut)
-        .def("repulsive_ucc_mst_cut",  &MutexWatershed::repulsive_ucc_mst_cut)
+        // .def("repulsive_ucc_mst_cut",  &MutexWatershed::repulsive_ucc_mst_cut)
         .def("set_uc", &MutexWatershed::set_uc)
         .def("check_bounds", &MutexWatershed::check_bounds)
         .def("is_finised", &MutexWatershed::is_finised)
