@@ -241,7 +241,9 @@ struct MutexWatershed {
         for (int64_t n = 0; n < ndims; ++n)
             stride_product *= dam_stride(n);
 
-        rng = std::uniform_int_distribution<>(0, stride_product);
+        // NOTE: we have to substract 1 from the node product, because
+        // uniform_distributions range is inclusive on both sides
+        rng = std::uniform_int_distribution<>(0, stride_product - 1);
 
         // set dam stride to 1 temporarily since it is replaced by rng
         auto real_stride = dam_stride;
