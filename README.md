@@ -33,9 +33,3 @@ repository and further dependencies specified there.
 
 You can obtain the data from:
 https://hcicloud.iwr.uni-heidelberg.de/index.php/s/6LuE7nxBN3EFRtL
-
-
-BSD Experiments
----------------
-
-TODO
