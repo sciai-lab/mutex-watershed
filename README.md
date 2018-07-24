@@ -2,9 +2,6 @@ Mutex Watershed
 ===============
 
 The Mutex Watershed algorithm for efficient segmentation without seeds.
-See:
-- TODO link to arxiv paper
-- TODO link to blog
 
 
 Installation
