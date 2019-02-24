@@ -1,0 +1,28 @@
+slicing_config:
+  window_size: [6, 486, 486]
+  stride: [1, 243, 243]
+  data_slice: '24:, :, :'
+
+volume_config:
+  raw: 
+    path: '/g/kreshuk/data/isbi2012_challenge/isbi2012_train_volume.h5'
+    path_in_file: 'volumes/raw'
+    dtype: float32
+    sigma: 0.025
+  segmentation:
+    path: '/g/kreshuk/data/isbi2012_challenge/isbi2012_train_volume.h5'
+    path_in_file: 'volumes/labels/neuron_ids_3d'
+    dtype: float32
+
+master_config:
+  elastic_transform:
+    alpha: 2000.
+    sigma: 50.
+    order: 0
+
+loader_config:
+  batch_size: 1
+  num_workers: 6
+  drop_last: True
+  pin_memory: False
+  shuffle: True

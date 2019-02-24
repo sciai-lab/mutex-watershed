@@ -35,3 +35,11 @@ repository and further dependencies specified there.
 
 You can obtain the data from:
 https://hcicloud.iwr.uni-heidelberg.de/index.php/s/6LuE7nxBN3EFRtL
+
+
+
+Training affinity networks
+--------------------------
+
+To train an affinity network for isbi, you can use the scripts in `experiments/training`.
+You will also need [inferno](https://github.com/inferno-pytorch/inferno) and [neurofire](https://github.com/inferno-pytorch/neurofire)
