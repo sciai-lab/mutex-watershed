@@ -12,7 +12,7 @@ $ conda env create -f environment.yaml
 Note that you might need to adjust the cuda version.
 
 In addition, you will need to add [neurofire]() to the environment and 
-install the mutex watershed repo.
+install the mutex watershed package.
 
 You will also need to adapt the input paths in the config files, e.g. [here](https://github.com/hci-unihd/mutex-watershed/blob/master/experiments/training/template_config/data_config.yml#L8).
 You can change the input window size [here](https://github.com/hci-unihd/mutex-watershed/blob/master/experiments/training/template_config/data_config.yml#L2)
