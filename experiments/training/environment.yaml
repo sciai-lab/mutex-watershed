@@ -1,0 +1,13 @@
+name:
+    train-mws
+channels:
+    - pytorch
+    - conda-forge
+dependencies:
+    - pytorch>=1.0
+    - torchvision
+    # adapt this to the cuda version you need
+    - cudatoolkit=10.0
+    - inferno>=0.3.2
+    # for installing the mutex watershed src code
+    - xtensor-python

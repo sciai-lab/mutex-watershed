@@ -16,14 +16,10 @@ from inferno.trainers.callbacks.logging.tensorboard import TensorboardLogger
 
 import neurofire.models as models
 from neurofire.criteria.loss_wrapper import LossWrapper
-from neurofire.criteria.loss_transforms import ApplyAndRemoveMask
 from neurofire.criteria.loss_transforms import RemoveSegmentationFromTarget
 from neurofire.criteria.loss_transforms import InvertTarget
 from neurofire.datasets.isbi2012.loaders import get_isbi_loader_3d
 
-
-# TODO implement with public MWS
-# from neurofire.metrics.arand import ArandErrorFromMWS
 from mws_metrics import ArandErrorFromMWS
 
 
@@ -44,14 +40,14 @@ def set_up_training(project_directory,
 
     criterion = SorensenDiceLoss()
     loss_train = LossWrapper(criterion=criterion,
-                             transforms=Compose(ApplyAndRemoveMask(), InvertTarget()))
+                             transforms=Compose(InvertTarget()))
     loss_val = LossWrapper(criterion=criterion,
                            transforms=Compose(RemoveSegmentationFromTarget(),
-                                              ApplyAndRemoveMask(), InvertTarget()))
+                                              InvertTarget()))
 
     # Build trainer and validation metric
     logger.info("Building trainer.")
-    smoothness = 0.75
+    smoothness = 0.9
 
     offsets = data_config['volume_config']['segmentation']['affinity_config']['offsets']
     strides = [1, 10, 10]
@@ -161,8 +157,7 @@ def make_data_config(data_config_file, affinity_config, n_batches):
 # configuration for validation data
 def make_validation_config(validation_config_file, affinity_config):
     template = yaml2dict('./template_config/validation_config.yml')
-    if affinity_config is not None:
-        affinity_config.update({'retain_segmentation': True})
+    affinity_config.update({'retain_segmentation': True})
     template['volume_config']['segmentation']['affinity_config'] = affinity_config
     with open(validation_config_file, 'w') as f:
         yaml.dump(template, f)
@@ -207,7 +202,7 @@ def main():
     from_checkpoint = bool(args.from_checkpoint)
     os.makedirs(project_directory, exist_ok=True)
 
-    affinity_config = {'retain_mask': True, 'ignore_label': None}
+    affinity_config = {'add_singleton_channel_dimension': True}
     offsets = get_mws_offsets()
     # offsets = get_default_offsets()
     affinity_config['offsets'] = offsets
