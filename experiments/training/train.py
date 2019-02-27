@@ -44,10 +44,10 @@ def set_up_training(project_directory,
 
     criterion = SorensenDiceLoss()
     loss_train = LossWrapper(criterion=criterion,
-                             transforms=Compose(ApplyAndRemoveMask(), InvertTarget()))
+                             transforms=InvertTarget())
     loss_val = LossWrapper(criterion=criterion,
                            transforms=Compose(RemoveSegmentationFromTarget(),
-                                              ApplyAndRemoveMask(), InvertTarget()))
+                                              InvertTarget()))
 
     # Build trainer and validation metric
     logger.info("Building trainer.")
@@ -162,7 +162,7 @@ def make_data_config(data_config_file, affinity_config, n_batches):
 def make_validation_config(validation_config_file, affinity_config):
     template = yaml2dict('./template_config/validation_config.yml')
     if affinity_config is not None:
-        affinity_config.update({'retain_segmentation': True})
+        affinity_config.update({'retain_segmentation': True, 'add_singleton_channel_dimension': True})
     template['volume_config']['segmentation']['affinity_config'] = affinity_config
     with open(validation_config_file, 'w') as f:
         yaml.dump(template, f)
@@ -207,7 +207,7 @@ def main():
     from_checkpoint = bool(args.from_checkpoint)
     os.makedirs(project_directory, exist_ok=True)
 
-    affinity_config = {'retain_mask': True, 'ignore_label': None}
+    affinity_config = {'add_singleton_channel_dimension': True} #, 'ignore_label': None}
     offsets = get_mws_offsets()
     # offsets = get_default_offsets()
     affinity_config['offsets'] = offsets

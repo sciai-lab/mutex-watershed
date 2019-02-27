@@ -1,5 +1,5 @@
 # The model arguments
-model_name: AnisotropicUNet
+model_name: UNet3D
 model_kwargs:
   in_channels: 1
   out_channels: 6

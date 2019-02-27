@@ -13,7 +13,7 @@ def compute_mws_segmentation(input_, offsets, n_attractive_channels,
     if randomize_strides:
         mst.compute_randomized_bounds()
     sorted_edges = np.argsort(input_.ravel())
-    mst.repulsive_mst_cut(sorted_edges, 0)
+    mst.repulsive_mst_cut(sorted_edges) #, 0)
     segmentation = mst.get_flat_label_image().reshape(vol_shape)
     return segmentation
 
