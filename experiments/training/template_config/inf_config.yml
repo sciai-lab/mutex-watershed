@@ -1,0 +1,28 @@
+# Specify how the data needs to be sliced before feeding to the network.
+# We use a 3D sliding window over the dataset to extract patches, which
+# are then fed to the network as batches.
+slicing_config:
+  # Sliding window size
+  window_size: [1, 512, 512]
+  window_size: [6, 486, 486]
+  # Sliding window stride
+  stride: [1, 243, 243]
+  # Reflect padding on the loaded volume. Follows numpy.pad semantics.
+  padding: [[0, 0], [32, 32], [32, 32]]
+  # Data slice to iterate over.
+  data_slice: ':, :, :'
+    
+
+# Specify paths to volumes
+volume_config:
+  # Raw data
+  raw:
+    path: '/g/kreshuk/data/isbi2012_challenge/isbi2012_test_volume.h5'
+    path_in_h5_dataset: 'volumes/raw'
+    dtype: 'float32'
+
+
+# config for inference engine
+gpu: 0
+crop_padding: True
+num_workers: 4
