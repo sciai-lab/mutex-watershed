@@ -47,11 +47,11 @@ def set_up_training(project_directory,
 
     # Build trainer and validation metric
     logger.info("Building trainer.")
-    smoothness = 0.9
+    smoothness = 0.95
 
     offsets = data_config['volume_config']['segmentation']['affinity_config']['offsets']
     strides = [1, 10, 10]
-    metric = ArandErrorFromMWS(average_slices=False, offsets=offsets,
+    metric = ArandErrorFromMWS(average_slices=True, offsets=offsets,
                                strides=strides, randomize_strides=False)
 
     trainer = Trainer(model)\

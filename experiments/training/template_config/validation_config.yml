@@ -1,7 +1,8 @@
 slicing_config:
-  window_size: [6, 486, 486]
-  stride: [1, 243, 243]
-  data_slice: '24:, :, :'
+  window_size: [12, 459, 459]
+  stride: [1, 128, 128]
+  data_slice: ':, :, :'
+  padding: [[0, 0], [27, 27], [27, 27]]
 
 volume_config:
   raw: 
