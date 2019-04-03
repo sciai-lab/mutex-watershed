@@ -1,16 +1,7 @@
-# Specify how the data needs to be sliced before feeding to the network.
-# We use a 3D sliding window over the dataset to extract patches, which
-# are then fed to the network as batches.
 slicing_config:
-  # Sliding window size
-  window_size: [1, 512, 512]
-  window_size: [6, 486, 486]
-  # Sliding window stride
-  stride: [1, 243, 243]
-  # Reflect padding on the loaded volume. Follows numpy.pad semantics.
-  padding: [[0, 0], [32, 32], [32, 32]]
-  # Data slice to iterate over.
-  data_slice: ':, :, :'
+  window_size: [12, 594, 594]
+  stride: [1, 1, 1]
+  padding: [[4, 4], [41, 41], [41, 41]]
     
 
 # Specify paths to volumes

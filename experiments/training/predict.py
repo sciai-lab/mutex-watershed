@@ -43,6 +43,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('project_directory', type=str)
     parser.add_argument('out_file', type=str, default='')
+    # use inf_config_tda.yml to run inference with test data augmentation
     parser.add_argument('--inference_config', type=str, default='template_config/inf_config.yml')
     parser.add_argument('--device', type=int, default=0)
     args = parser.parse_args()

@@ -1,0 +1,41 @@
+slicing_config:
+  window_size: [12, 594, 594]
+  stride: [1, 1, 1]
+  padding: [[4, 4], [41, 41], [41, 41]]
+ 
+
+# Specify paths to volumes
+volume_config:
+  # Raw data
+  raw:
+    path: '/g/kreshuk/data/isbi2012_challenge/isbi2012_test_volume.h5'
+    path_in_h5_dataset: 'volumes/raw'
+    dtype: 'float32'
+
+
+# config for inference engine
+gpu: 0
+augmentation_config: {combination_mode: mean, dim: 2}
+crop_padding: true
+num_workers: 8
+blending_config:
+  dim: 3
+  ramp_size: [4, 32, 32]
+offsets:
+  - [-1, 0, 0]
+  - [0, -1, 0]
+  - [0, 0, -1]
+  - [-1, -1, -1]
+  - [-1, 1, 1]
+  - [-1, -1, 1]
+  - [-1, 1, -1]
+  - [0, -9, 0]
+  - [0, 0, -9]
+  - [0, -9, -9]
+  - [0, 9, -9]
+  - [0, -9, -4]
+  - [0, -4, -9]
+  - [0, 4, -9]
+  - [0, 9, -4]
+  - [0, -27, 0]
+  - [0, 0, -27]

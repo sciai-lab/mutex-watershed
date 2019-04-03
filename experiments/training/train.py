@@ -1,4 +1,4 @@
-#! /g/kreshuk/pape/Work/software/conda/miniconda3/envs/torch10/bin/python
+#! /g/kreshuk/pape/Work/software/conda/miniconda3/envs/torch/bin/python
 
 import os
 import sys
