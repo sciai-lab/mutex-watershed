@@ -49,7 +49,7 @@ def main():
     args = parser.parse_args()
     if args.device != 0:
         set_device(args.device)
-    run_inference(args.project_dir, args.out_file, args.inference_config)
+    run_inference(args.project_directory, args.out_file, args.inference_config)
 
 
 if __name__ == '__main__':
