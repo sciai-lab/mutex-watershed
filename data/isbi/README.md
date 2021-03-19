@@ -15,4 +15,4 @@ The file `isbi_3d_model.pytorch` contains the weights of the
 trained model (pytorch 0.2).
 
 You can download the zip from
-https://hcicloud.iwr.uni-heidelberg.de/index.php/s/6LuE7nxBN3EFRtL
+https://oc.embl.de/index.php/s/sXJzYVK0xEgowOz
